@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<title>JavaScrip 100 - minesweeper</title>
+
+	<style>
+		body {
+			text-align: center;
+			padding-top: 100px;
+			background-color: #272822;
+			color: #3E86A0;
+
+		}
+
+		table.center {
+			width: 60%;
+			margin-left: 20%;
+			margin-right: 20%;
+
+
+		}
+
+
+		td.start {
+			background-color: #666666;
+			color: #fff;
+			border-radius: 10px;
+			padding: 20px;
+			font-size: 80%;
+			cursor: pointer;
+		}
+
+
+
+		td.start:hover {
+			background-color: #999999;
+			color: #fff;
+			border-radius: 10px;
+			padding: 20px;
+			font-size: 80%;
+			cursor: pointer;
+		}
+
+		td.clicked {
+			background-color: transparent;
+			color: #fff;
+			border-radius: 10px;
+			padding: 20px;
+			font-size: 80%
+		}
+
+
+		td.mine {
+			background-color: #FF3C38;
+			color: #fff;
+			border-radius: 10px;
+			padding: 20px;
+			font-size: 80%
+		}
+
+
+		td.suspect-mine {
+			background-color: rgb(209, 143, 0);
+			color: rgb(0, 0, 0);
+			border-radius: 10px;
+			padding: 20px;
+			font-size: 80%
+		}
+
+		td.next-mine {
+			background-color: #93864F;
+			color: #fff;
+			border-radius: 10px;
+			padding: 20px;
+			font-size: 80%
+		}
+
+		.button-hidden {
+			background: transparent;
+			color: transparent;
+			border: none;
+			outline: none;
+			display: block;
+		}
+
+
+		.button-visible {
+			background-color: #4CAF50;
+			border: none;
+			color: #ffffff;
+			padding: 15px 32px;
+			text-align: center;
+			text-decoration: none;
+			display: inline-block;
+			font-size: 16px;
+			cursor: pointer;
+
+		}
+	</style>
+
+
+
+
+
+
+</head>
+
+<body>
+	<h2>Welcome to MineSweeper Game </h2>
+	<script>
+
+		// *********************************************
+		// **    Code Author:   Pavel Trekell
+		// **    Date: Nov 28, 2017
+		// **    Description: MineSweeper Game
+		// **
+		// **********************************************
+		// **       Change Log
+		// **     11/04/2017 – changed the previous code to use functions and made
+		// **	the name prompt as a function and the number of line prompt, check and display
+		// **	in another function to improve readability and split the code into sub-sections
+		// **     11/09/17 - Ryan Fields: Using array to create minefield and inserting random mines.
+		// ** 	  11/14/17 - Pavel Trekell: Updated code to store a 1 in any location adjacent to the M 
+		// **              - commented out/ removed previous solution altogether
+		// **     11/28/17 - Create a version that has two or more randomly placed Mines with all 
+		//                   adjacent numbers calculating correctly.
+		//
+		// **********************************************
+
+
+
+		// V A R I A B L E S
+		var userName = "",					// initialized to an empty string to be able to use while loop later
+			gridSize = 0,					// grid size is set initially to 0 only to be changed by the app logic
+			mineCount = 0,					// initilized to 0 mines. to be updated by the prompt below
+			gridArr = [],					// initialized array which will hold a 2D grid
+			gridWithMinesArr = [],					// initialized array which will hold a 2D grid and an M in a random position
+			gridWithMinesAndOnes = [];					// initialized array which will hold a 2D grid and an M in a random position with ones in adjacent locations
+
+
+		// F U N C T I O N S
+		var userNamePrompt = userNamePrompt,		// prompts for user name and alerts and returns the entered name
+			promptUserForGrid = promptUserForGrid,	// prompts user for grid dimensions and returns the grid array
+			promptUserForMineCount = promptUserForMineCount, // prompts user for how many mines there should be
+			buildTheGrid = buildTheGrid,			// returns 2D grid based on the width and height entered as parameters
+			printTheGrid = printTheGrid,			// accepts array of objects as a parameter, which gets printed with document.write
+			addMines = addMines,		  			// accepts 2D array as a parameter, randomly generates mines location and stores Ms in those locations; then returns the new 2D array
+			addAdjacentOnes = addAdjacentOnes,		// accepts 2 dimensional array as a parameter, finds the mine locations and enters corresponding number/mine counts
+													// in adjacent locations; then returns array of cell objects
+			assignHandlers = assignHandlers,        // Assignes onclick handlers to individual table cells
+			restartGame = restartGame;           	// Reloads the page so that you can start a new game from scratch (including entering name)
+
+
+
+
+		// APP LOGIC
+
+
+		userName = userNamePrompt();						// assign value from the prompt window to userName 
+		gridSize = promptUserForGrid(); 					// assign value from the prompt window to gridSize
+		mineCount = promptUserForMineCount(gridSize);		// assign value from the prompt window to mineCount
+		gridArr = buildTheGrid(gridSize, gridSize); 		// build grid based on gridSize entered
+		gridWithMinesArr = addMines(gridArr, mineCount);				// add Ms to the passed in 2D array
+		gridWithMinesAndOnes = addAdjacentOnes(gridWithMinesArr);	// add mine counts to the adjacent locations to M
+
+
+		printTheGrid(gridWithMinesAndOnes); 								// print out the entire grid into the HTML document
+		assignHandlers(gridWithMinesAndOnes);                               // assigne onclick handlers to all table cells
+
+
+
+
+		// FUNCTIONS CODE
+
+
+        /**
+         * Iterates over a 2D array, finds the M locations and adds number of mines to the adjacent locations; ultimately returning a new object array with the M and ones
+         * @param twoDimGrid - 2D array that will be used to locate the Ms
+         * @returns {Array} - array of objects each representing a cell
+         */
+		function addAdjacentOnes(twoDimGrid) {
+
+
+			var minesCoords = [],
+				cellObjsArr = [],
+				gridSize = twoDimGrid.length;
+
+
+			for (let i = 0; i < gridSize; i++) {									// loop through the array entered as parameter, extract the
+				for (let j = 0; j < gridSize; j++) {								// row and column index and assign the values to the variables
+					if (twoDimGrid[i][j] === 'M') {												// defined earlier
+						minesCoords.push(i + '' + j);
+					}
+				}
+			}
+
+			console.log("minesCoords")
+			console.log(minesCoords);
+
+
+			//1. create objects - one per cell
+			for (let i = 0; i < gridSize; i++) {
+				for (let j = 0; j < gridSize; j++) {
+
+					var cellObj = {};
+					cellObj.id = i + '' + j;
+					cellObj.rowIndex = i;
+					cellObj.colIndex = j;
+					cellObj.surroundingCellsIds = [];
+					cellObj.value = twoDimGrid[i][j];
+
+					cellObjsArr.push(cellObj);
+				}
+			}
+
+
+			var gridSize = twoDimGrid.length;
+			//2. add coordinates for all cells around that one object cell
+			for (let i = 0; i < cellObjsArr.length; i++) {				// iterate through all objects within array created above
+				var currentCell = cellObjsArr[i];						// cell we're wearking with in individual loop iterations
+
+				// GET THE ROW ABOVE COORDS
+				//  X X X
+				//  * O *
+				//  * * *
+				//
+				//  O = current cell 
+				//  X = values we're trying to find
+				// if the row index > 0, we can be sure that we can go one row index down and get the cell IDs there
+				if (currentCell.rowIndex > 0) {
+					//  X * *
+					//  * O *
+					//  * * *
+					//  upper left corner cell ID
+					if (currentCell.colIndex > 0) {
+						currentCell.surroundingCellsIds.push(
+							(currentCell.rowIndex - 1)
+							+ ''
+							+ (currentCell.colIndex - 1)
+						);
+					}
+
+
+					//  * X *
+					//  * O *
+					//  * * *
+					//  upper middle cell ID
+					if (currentCell.colIndex >= 0) {
+						currentCell.surroundingCellsIds.push(
+							(currentCell.rowIndex - 1)
+							+ ''
+							+ (currentCell.colIndex)
+						);
+					}
+
+
+					//  * * X
+					//  * O *
+					//  * * *
+					//  upper right cell ID
+					if (currentCell.colIndex >= 0 && currentCell.colIndex < (gridSize - 1)) {
+						currentCell.surroundingCellsIds.push(
+							(currentCell.rowIndex - 1)
+							+ ''
+							+ (currentCell.colIndex + 1)
+						);
+					}
+
+
+
+
+				}
+
+
+
+				// GET THE CELLS NEXT TO THE LEFT AND RIGHT COORDS
+				//  * * *
+				//  X O X
+				//  * * *
+				//
+				//  O = current cell 
+				//  X = values we're trying to find
+
+
+				//  * * *
+				//  X O *
+				//  * * *
+				//  left center ID
+				if (currentCell.colIndex > 0) {
+					currentCell.surroundingCellsIds.push(
+						(currentCell.rowIndex)
+						+ ''
+						+ (currentCell.colIndex - 1)
+					);
+				}
+
+
+
+				//  * * *
+				//  * O X
+				//  * * *
+				//  right center ID
+				if (currentCell.colIndex < (gridSize - 1)) {
+					currentCell.surroundingCellsIds.push(
+						(currentCell.rowIndex)
+						+ ''
+						+ (currentCell.colIndex + 1)
+					);
+				}
+
+
+
+
+				// GET THE ROW BELOW COORDS
+				//  * * *
+				//  * O *
+				//  X X X
+				//
+				//  O = current cell 
+				//  X = values we're trying to find
+
+				// if the row index < gridSize, we can be sure that we can go one row index up and get the cell IDs there
+				if (currentCell.rowIndex < (gridSize - 1)) {
+
+
+					//  * * *
+					//  * O *
+					//  X * *
+					//  lower left corner cell ID
+					if (currentCell.colIndex > 0) {
+						currentCell.surroundingCellsIds.push(
+							(currentCell.rowIndex + 1)
+							+ ''
+							+ (currentCell.colIndex - 1)
+						);
+					}
+
+
+					//  * * *
+					//  * O *
+					//  * X *
+					//  lower middle cell ID
+					if (currentCell.colIndex >= 0) {
+						currentCell.surroundingCellsIds.push(
+							(currentCell.rowIndex + 1)
+							+ ''
+							+ (currentCell.colIndex)
+						);
+					}
+
+
+					//  * * *
+					//  * O *
+					//  * * X
+					//  lower right cell ID
+					if (currentCell.colIndex >= 0 && currentCell.colIndex < (gridSize - 1)) {
+						currentCell.surroundingCellsIds.push(
+							(currentCell.rowIndex + 1)
+							+ ''
+							+ (currentCell.colIndex + 1)
+						);
+					}
+
+
+
+				}
+
+			}
+
+
+
+
+			//3. iterate through individual adjacent cells and increase counter of mines if M found
+
+			for (let i = 0; i < cellObjsArr.length; i++) {
+
+				var currentCell = cellObjsArr[i];
+				var tempValue = 0;
+
+				if (currentCell.value !== "M") {
+					for (let j = 0; j < currentCell.surroundingCellsIds.length; j++) {
+
+						for (let k = 0; k < cellObjsArr.length; k++) {
+
+							if (currentCell.surroundingCellsIds[j] === cellObjsArr[k].id && cellObjsArr[k].value === "M")
+								tempValue++;
+						}
+
+
+
+					}
+					currentCell.value = tempValue;
+				}
+			}
+
+
+			return cellObjsArr;																// return the object array
+		}
+
+
+
+        /**
+         * Iterates over a 2D array and stores M in a random location; ultimately returning the new array with the M 
+         * @param twoDimGrid - 2D array that will be used to insert a random M position 
+         * @returns {Array}
+         */
+		function addMines(twoDimGrid, mineCount) {
+
+			var minesCoordsHolder = []; // holds individual mines coordinates to make sure we always get unique M positions based on mineCount
+
+			while (minesCoordsHolder.length < mineCount) { //
+
+				var randomRowNumber = Math.floor(Math.random() * twoDimGrid.length);	// random row number generator
+				var randomColumnNumber = Math.floor(Math.random() * twoDimGrid.length);	// random column number generator
+
+				if (minesCoordsHolder.indexOf(randomRowNumber + '' + randomColumnNumber) === -1) {
+					twoDimGrid[randomRowNumber][randomColumnNumber] = "M";							// assign the "M" value to the random row/column pair   
+					minesCoordsHolder.push(randomRowNumber + '' + randomColumnNumber);				// add the coords to the minesCoordsHolder array used for the while loop
+				}
+			}
+
+			return twoDimGrid;																// return the modified 2D array that now has "M" in a random location
+		}
+
+
+        /**
+         * Prompts user for their user name and returns the entered value
+         * @returns {string}
+         */
+		function userNamePrompt() {
+			// loop until user actually enteres their name in a prompt field
+			while (userName === "") {
+				// Prompt for a user's  name
+				userName = prompt('Please enter a User Name.');
+			}
+			//check for null (Cancel) and empty string
+			if (userName === null || userName === "") {
+				// if user canceled the prompt (null) dialog or did not enter a name (empty string)
+				alert('No Name Entered');
+				return userName;
+			} else {
+				// if user entered name and did not cancel the prompt
+				alert('Welcome ' + userName + '!');
+				return userName;
+			}
+		}
+
+
+        /**
+         * Prompts user for the grid width and returns the entered value
+         * @returns {number}
+         */
+		function promptUserForGrid() {
+			// setting gridWith to 0 so that it can be used in the while loop later
+			let gridWidth = 0;
+
+			// Prompt user to enter a number for width of minefield
+			// While loop until user enters width that 5 or more, is a number and does not cancel the prompt (null)
+			while ((gridWidth < 5) || (isNaN(gridWidth)) || (gridWidth == null)) {
+				// Prompt for the field width
+				gridWidth = prompt('How wide would you like your minefield to be? (Please enter a number equal or greater than 5)');
+			}
+
+			// several arbitrary checks to ensure user indeed entered width that's greater than 5, is a number and is not null (user did not cancel the prompt)
+			if ((gridWidth >= 5) && (!isNaN(gridWidth)) && (gridWidth != null)) {
+				return gridWidth;
+			}
+		}
+
+
+        /**
+         * Prompts user for the grid width and returns the entered value
+         * @returns {number}
+         */
+		 function promptUserForMineCount(gridSize) {
+			
+			var mineCount = 0;					// setting mineCount to 0 so that it can be used in the while loop later
+
+			// Prompt user to enter a number for mineCount
+			// While loop until user enters count that  is a number greater than 0,is not greater than the minefield itself and  does not cancel the prompt (null)
+			while ((mineCount === 0) || (isNaN(mineCount)) || (mineCount == null) || (mineCount > (gridSize * gridSize))) {
+				// Prompt for the mine count
+				mineCount = prompt('How many mines would you like to play?');
+			}
+
+			// several arbitrary checks to ensure user indeed entered width that's greater than 5, is a number and is not null (user did not cancel the prompt)
+			if ((mineCount > 0) && (!isNaN(mineCount)) && (mineCount != null)) {
+				return mineCount;
+			}
+		}
+
+        /**
+         * Creates and returns a two dimensional array based on width and height parameters entered
+         * @param gridWidth - desired grid width
+         * @param gridHeight - desired grid height
+         * @returns {Array}
+         */
+		function buildTheGrid(gridWidth, gridHeight) {
+			// initializ array which will be ultimately returned
+			let gridArr = [];
+
+			// create a two dimensional array of rows (based on the height of the grid) defined above
+			for (let i = 0; i < gridHeight; i++) {
+
+				// create a row array with 0 as a value for each array position based on how wide (gridWidth) user
+				// wants the grid to be
+				let rowArr = [];
+				for (let j = 0; j < gridWidth; j++) {
+					rowArr.push(0);
+				}
+
+				// insert the newly created row into the gridArr which will be returned
+				gridArr.push(rowArr);
+
+			}
+
+			return gridArr;
+		}
+
+
+        /**
+         * Iterates over the array of objects and prints the values into the HTML document
+         * @param twoDimGrid
+         */
+		function printTheGrid(cellObjArr) {
+			document.write('<table class="center">')
+			for (let i = 0; i < gridSize; i++) {
+				document.write('<tr>')
+				for (let j = 0; j < cellObjArr.length; j++) {
+					if (i === cellObjArr[j].rowIndex)
+						document.write('<td class="start" id="' + cellObjArr[j].id + '">&nbsp;</td>');
+				}
+				document.write('</tr>');
+			}
+			document.write('</table>');
+		}
+
+
+
+		/**
+		* Assignes onclick handlers to individual table cells
+		*/
+		function assignHandlers(grid) {
+
+			var tableCells = document.getElementsByTagName("td");								//get all td HTML elements from the document
+			var mineIdsArr = [];																			//declare variable to hold M coordinates
+			var alertIdsArr = [];
+
+			for (let i = 0; i < grid.length; i++) {
+				if (grid[i].value === "M") {
+					mineIdsArr.push(grid[i].id);
+				}
+
+				console.log(grid[i]);
+				if (grid[i].value > 0) {
+					alertIdsArr.push(grid[i].id);
+				}
+			}
+
+
+
+
+			for (let i = 0; i < tableCells.length; i++) {										// assign onclick handlers to all table cells (using the td element array created earlier)
+				tableCells[i].onclick = function (e) {
+
+					if (mineIdsArr.indexOf(e.target.id) > -1) {												// if the clicked id has the same id as the mine, show M and the button
+						document.getElementById(e.target.id).className = "mine";				// and change the background color 
+						document.getElementById(e.target.id).innerHTML = "M";
+
+						//TODO: only make visible when the last one is clicked or add regular minesweeper logic
+						document.getElementById('myButton').className = "button-visible";
+					} else if (alertIdsArr.indexOf(e.target.id) > -1) {							// if the clicked id has the same id as one of the values in the onesArr, show 1
+						document.getElementById(e.target.id).className = "next-mine";			// and change the background color
+						
+
+						for (let j = 0; j < grid.length; j++) {
+							if (grid[j].id === e.target.id) {
+								document.getElementById(e.target.id).innerHTML = grid[j].value;
+							}
+						}
+
+
+					} else {
+						document.getElementById(e.target.id).className = "clicked";				// in all other cases, change the background color (set to transparent)
+					}
+
+				}
+
+				tableCells[i].oncontextmenu = function(e) {
+					e.preventDefault();
+					document.getElementById(e.target.id).className = "suspect-mine";
+					document.getElementById(e.target.id).innerHTML = "?";
+				}
+
+
+
+			}
+		}
+
+
+		/**
+		* Reloads the page so that you can start a new game from scratch (including entering name)
+		*/
+		function restartGame() {
+			document.getElementsByTagName("BODY")[0].innerHTML = "";
+			location.reload();
+
+		}
+
+
+
+
+	</script>
+
+
+	<br/>
+	<button type="button" class="button-hidden" id="myButton" onclick="restartGame()">Restart the game!</button>
+
+</body>
+
+</html>

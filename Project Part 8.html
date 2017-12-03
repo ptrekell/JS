@@ -60,6 +60,21 @@
 			font-size: 80%
 		}
 
+		td.found-mine {
+			background-color: rgb(0, 255, 55);
+			color: rgb(0, 0, 0);
+			border-radius: 10px;
+			padding: 20px;
+			font-size: 80%
+		}
+
+		td.incorrect-mine {
+			background-color: rgb(0, 140, 255);
+			color: rgb(255, 255, 255);
+			border-radius: 10px;
+			padding: 20px;
+			font-size: 80%
+		}
 
 		td.suspect-mine {
 			background-color: rgb(209, 143, 0);
@@ -218,6 +233,8 @@
 					cellObj.colIndex = j;
 					cellObj.surroundingCellsIds = [];
 					cellObj.value = twoDimGrid[i][j];
+					cellObj.isClicked = false;
+					cellObj.isRightClicked = false;
 
 					cellObjsArr.push(cellObj);
 				}
@@ -499,7 +516,7 @@
 
 			// several arbitrary checks to ensure user indeed entered width that's greater than 5, is a number and is not null (user did not cancel the prompt)
 			if ((mineCount > 0) && (!isNaN(mineCount)) && (mineCount !== null)) {
-				document.getElementById('mine-counter').innerHTML = "You still need to find " + mineCount + " mines";
+				document.getElementById('mine-counter').innerHTML = "Amount of mines to find: " + mineCount;
 				return parseInt(mineCount);
 			}
 		}
@@ -559,10 +576,10 @@
 
 
 
+
 			var tableCells = document.getElementsByTagName("td"),								//get all td HTML elements from the document
 				mineIdsArr = [],																//declare arr to hold M coordinates
 				alertIdsArr = [],																//declare arr to hold coordinates of cells with vales > 0
-				alreadyClickedCount = 0,														//keep count of how many M cells have been clicked
 				isGameOver = false;																//track the game state
 
 			for (let i = 0; i < grid.length; i++) {
@@ -581,11 +598,13 @@
 			for (let i = 0; i < tableCells.length; i++) {										// assign onclick handlers to all table cells (using the td element array created earlier)
 				tableCells[i].onclick = onClickHandler;
 				tableCells[i].oncontextmenu = onRightClickHandler;
+
 			}
 
 
 
 			function onClickHandler(e) {
+
 
 
 				if (!isGameOver) {
@@ -601,7 +620,30 @@
 						}
 					} else {
 						document.getElementById(e.target.id).className = "clicked";				// in all other cases, change the background color (set to transparent)
+						document.getElementById(e.target.id).innerHTML = "";
 					}
+
+
+					for (let i = 0; i < grid.length; i++) {
+						if (e.target.id === grid[i].id) {
+							grid[i].isRightClicked = false;				// set current cell right clicked flag to false
+							grid[i].isClicked = true;					// set current cell left licked flag to true
+
+							for(let j = 0; j < grid[i].surroundingCellsIds.length; j++) { // reveal some of the surroundging cells if they don't have M or values in them
+								if(mineIdsArr.indexOf(grid[i].surroundingCellsIds[j]) === -1 
+								   && alertIdsArr.indexOf(grid[i].surroundingCellsIds[j]) === -1 ) {
+
+									document.getElementById(grid[i].surroundingCellsIds[j]).className = "clicked";	
+									document.getElementById(grid[i].surroundingCellsIds[j]).innerHTML = "";
+
+
+								}
+							}
+
+
+						}
+					}
+
 				}
 
 
@@ -611,39 +653,76 @@
 			function onRightClickHandler(e) {
 				e.preventDefault();
 
-				if (!isGameOver) {
-					
+				var currentCell = {},			// hold current right clicked cell reference
+					rightClickedCellIdsArr = [],	// hold ids of right clicked cells
+					rightClickedCellCount = 0;	// hold 
 
-					if (alreadyClickedCount < minecount) {
-						alreadyClickedCount++;											//increase the count of mines that have been potentially found
-						var mineOrMines = (mineCount - alreadyClickedCount) === 1 ? "mine" : "mines"; //mine vs. mines based on the difference												
-						document.getElementById('mine-counter').innerHTML = "You still need to find " + (mineCount - alreadyClickedCount) + " " + mineOrMines;
-						document.getElementById(e.target.id).className = "suspect-mine";
-						document.getElementById(e.target.id).innerHTML = "M";
-					} else {									// if all mines have been found, show the restart game button
-
-
-						console.log("a;; good");
-						//1. if selected (right clicked) cells equal the actual mine coords, user wins
-
-						if(true) {
-
-						} else {
-						//2. else user loses 
-
-						}
-						
-
-						document.getElementById('mine-counter').innerHTML = "";
-						document.getElementById('myButton').className = "button-visible";
-
-						isGameOver = true;
+				for (let i = 0; i < grid.length; i++) {
+					if (e.target.id === grid[i].id) {
+						currentCell = grid[i];	// assign the value to current cell
 					}
 				}
 
 
 
+				//if the game is not over and the current cell has not been left clicked
+				if (!isGameOver && !currentCell.isClicked) {
+
+					document.getElementById(e.target.id).className = "suspect-mine";
+					document.getElementById(e.target.id).innerHTML = "M";
+
+					currentCell.isClicked = false; // update flags for the current cell
+					currentCell.isRightClicked = true;// update flags for the current cell
+
+					for (let i = 0; i < grid.length; i++) {	// get the count of cells that have been right clicked	
+						if (grid[i].isRightClicked) {
+							rightClickedCellCount++;
+							rightClickedCellIdsArr.push(grid[i].id);
+						}
+					}
+
+					if (rightClickedCellCount === mineCount) { //if the count of right clicked cells equals the amount of mines, we can run this logic
+						// and determine whether user won or lost
+
+						document.getElementById('mine-counter').innerHTML = "";
+						document.getElementById('myButton').className = "button-visible";
+						isGameOver = true;
+
+
+						let gridSize = grid.length;
+						for (let i = 0; i < gridSize; i++) {
+							if (mineIdsArr.indexOf(grid[i].id) > -1
+								&& rightClickedCellIdsArr.indexOf(grid[i].id) > -1) {								// if the  id has the same id as the mine and user right clicked it show :) and the button
+								document.getElementById(grid[i].id).className = "found-mine";				// and change the background color 
+								document.getElementById(grid[i].id).innerHTML = ":)";
+							} else if (mineIdsArr.indexOf(grid[i].id) === -1
+								&& rightClickedCellIdsArr.indexOf(grid[i].id) > -1) {								// if the  id has different id from the mine but user right clicked it, show :() and the button
+								document.getElementById(grid[i].id).className = "incorrect-mine";				// and change the background color 
+								document.getElementById(grid[i].id).innerHTML = ":(";
+							} else if (mineIdsArr.indexOf(grid[i].id) > -1
+								&& rightClickedCellIdsArr.indexOf(grid[i].id) === -1) {								// if the  id has different id from mine, and user right clicked it show M
+								document.getElementById(grid[i].id).className = "mine";				// and change the background color 
+								document.getElementById(grid[i].id).innerHTML = "M";
+							} else if (alertIdsArr.indexOf(grid[i].id) > -1) {							// if the id has the same id as one of the values in the onesArr, show mine count
+								document.getElementById(grid[i].id).className = "next-mine";			// and change the background color
+								document.getElementById(grid[i].id).innerHTML = grid[i].value;
+							} else {
+								document.getElementById(grid[i].id).className = "clicked";				// in all other cases, change the background color (set to transparent)
+								document.getElementById(grid[i].id).innerHTML = "";
+							}
+						}
+
+
+					}
+
+
+
+
+				}
+
+
 			}
+
 
 
 			/**

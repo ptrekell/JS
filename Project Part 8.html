@@ -103,7 +103,6 @@
 		#mine-counter {
 			color: #dddddd;
 		}
-
 	</style>
 
 
@@ -489,19 +488,20 @@
 
 			// Prompt user to enter a number for mineCount
 			// While loop until user enters count that  is a number greater than 0,is not greater than the minefield itself and  does not cancel the prompt (null)
-			while ((mineCount === 0) || (isNaN(mineCount)) || (mineCount == null) || (mineCount > (gridSize * gridSize))) {
+			while ((mineCount < 1) ||
+				(isNaN(mineCount)) ||
+				(mineCount === null) ||
+				(mineCount > (gridSize * gridSize))
+			) {
 				// Prompt for the mine count
 				mineCount = prompt('How many mines would you like to play?');
 			}
 
 			// several arbitrary checks to ensure user indeed entered width that's greater than 5, is a number and is not null (user did not cancel the prompt)
-			if ((mineCount > 0) && (!isNaN(mineCount)) && (mineCount != null)) {
+			if ((mineCount > 0) && (!isNaN(mineCount)) && (mineCount !== null)) {
 				document.getElementById('mine-counter').innerHTML = "You still need to find " + mineCount + " mines";
-				return mineCount;
+				return parseInt(mineCount);
 			}
-
-
-			
 		}
 
         /**
@@ -562,7 +562,8 @@
 			var tableCells = document.getElementsByTagName("td"),								//get all td HTML elements from the document
 				mineIdsArr = [],																//declare arr to hold M coordinates
 				alertIdsArr = [],																//declare arr to hold coordinates of cells with vales > 0
-				alreadyClickedCount = 0;														//keep count of how many M cells have been clicked
+				alreadyClickedCount = 0,														//keep count of how many M cells have been clicked
+				isGameOver = false;																//track the game state
 
 			for (let i = 0; i < grid.length; i++) {
 				if (grid[i].value === "M") {
@@ -585,41 +586,98 @@
 
 
 			function onClickHandler(e) {
-				if (mineIdsArr.indexOf(e.target.id) > -1) {												// if the clicked id has the same id as the mine, show M and the button
-					document.getElementById(e.target.id).className = "mine";				// and change the background color 
-					document.getElementById(e.target.id).innerHTML = "M";
-
-					alreadyClickedCount++;													//increase the count of mines that have been found
-					document.getElementById('mine-counter').innerHTML = "You still need to find " + (mineCount - alreadyClickedCount)  + " mines";
-
-					if (alreadyClickedCount == minecount) {									// if all mines have been found, show the restart game button
-					    document.getElementById('mine-counter').innerHTML = "";
-						document.getElementById('myButton').className = "button-visible";
-					}
-
-				} else if (alertIdsArr.indexOf(e.target.id) > -1) {							// if the clicked id has the same id as one of the values in the onesArr, show 1
-					document.getElementById(e.target.id).className = "next-mine";			// and change the background color
 
 
-					for (let j = 0; j < grid.length; j++) {
-						if (grid[j].id === e.target.id) {
-							document.getElementById(e.target.id).innerHTML = grid[j].value;
+				if (!isGameOver) {
+					if (mineIdsArr.indexOf(e.target.id) > -1) {												// if the clicked id has the same id as the mine, show M and the button
+						gameOver();
+
+					} else if (alertIdsArr.indexOf(e.target.id) > -1) {							// if the clicked id has the same id as one of the values in the onesArr, show mine count
+						document.getElementById(e.target.id).className = "next-mine";			// and change the background color
+						for (let j = 0; j < grid.length; j++) {
+							if (grid[j].id === e.target.id) {
+								document.getElementById(e.target.id).innerHTML = grid[j].value;
+							}
 						}
+					} else {
+						document.getElementById(e.target.id).className = "clicked";				// in all other cases, change the background color (set to transparent)
 					}
-
-
-				} else {
-					document.getElementById(e.target.id).className = "clicked";				// in all other cases, change the background color (set to transparent)
 				}
+
 
 			}
 
 
 			function onRightClickHandler(e) {
 				e.preventDefault();
-				document.getElementById(e.target.id).className = "suspect-mine";
-				document.getElementById(e.target.id).innerHTML = "?";
+
+				if (!isGameOver) {
+					
+
+					if (alreadyClickedCount < minecount) {
+						alreadyClickedCount++;											//increase the count of mines that have been potentially found
+						var mineOrMines = (mineCount - alreadyClickedCount) === 1 ? "mine" : "mines"; //mine vs. mines based on the difference												
+						document.getElementById('mine-counter').innerHTML = "You still need to find " + (mineCount - alreadyClickedCount) + " " + mineOrMines;
+						document.getElementById(e.target.id).className = "suspect-mine";
+						document.getElementById(e.target.id).innerHTML = "M";
+					} else {									// if all mines have been found, show the restart game button
+
+
+						console.log("a;; good");
+						//1. if selected (right clicked) cells equal the actual mine coords, user wins
+
+						if(true) {
+
+						} else {
+						//2. else user loses 
+
+						}
+						
+
+						document.getElementById('mine-counter').innerHTML = "";
+						document.getElementById('myButton').className = "button-visible";
+
+						isGameOver = true;
+					}
+				}
+
+
+
 			}
+
+
+			/**
+			* Reveals all values and mines; changes formatting accordingly
+			*/
+			function gameOver() {
+
+				if (!isGameOver) {
+					let gridSize = grid.length;
+					for (let i = 0; i < gridSize; i++) {
+						if (mineIdsArr.indexOf(grid[i].id) > -1) {								// if the  id has the same id as the mine, show M and the button
+							document.getElementById(grid[i].id).className = "mine";				// and change the background color 
+							document.getElementById(grid[i].id).innerHTML = "M";
+						} else if (alertIdsArr.indexOf(grid[i].id) > -1) {							// if the id has the same id as one of the values in the onesArr, show mine count
+							document.getElementById(grid[i].id).className = "next-mine";			// and change the background color
+							document.getElementById(grid[i].id).innerHTML = grid[i].value;
+						} else {
+							document.getElementById(grid[i].id).className = "clicked";				// in all other cases, change the background color (set to transparent)
+							document.getElementById(grid[i].id).innerHTML = "";
+						}
+					}
+
+					document.getElementById('mine-counter').innerHTML = "GAME OVER <br> YOU LOST!";
+					document.getElementById('myButton').className = "button-visible";
+
+				}
+
+
+				isGameOver = true;
+
+			}
+
+
+
 
 		}
 

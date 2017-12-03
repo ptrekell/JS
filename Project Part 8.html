@@ -98,6 +98,12 @@
 			cursor: pointer;
 
 		}
+
+
+		#mine-counter {
+			color: #dddddd;
+		}
+
 	</style>
 
 
@@ -109,6 +115,8 @@
 
 <body>
 	<h2>Welcome to MineSweeper Game </h2>
+
+	<h3 id="mine-counter"></h3>
 	<script>
 
 		// *********************************************
@@ -124,7 +132,7 @@
 		// **     11/09/17 - Ryan Fields: Using array to create minefield and inserting random mines.
 		// ** 	  11/14/17 - Pavel Trekell: Updated code to store a 1 in any location adjacent to the M 
 		// **              - commented out/ removed previous solution altogether
-		// **     11/28/17 - Create a version that has two or more randomly placed Mines with all 
+		// **     12/3/17 - Create a version that has two or more randomly placed Mines with all 
 		//                   adjacent numbers calculating correctly.
 		//
 		// **********************************************
@@ -148,7 +156,7 @@
 			printTheGrid = printTheGrid,			// accepts array of objects as a parameter, which gets printed with document.write
 			addMines = addMines,		  			// accepts 2D array as a parameter, randomly generates mines location and stores Ms in those locations; then returns the new 2D array
 			addAdjacentOnes = addAdjacentOnes,		// accepts 2 dimensional array as a parameter, finds the mine locations and enters corresponding number/mine counts
-													// in adjacent locations; then returns array of cell objects
+			// in adjacent locations; then returns array of cell objects
 			assignHandlers = assignHandlers,        // Assignes onclick handlers to individual table cells
 			restartGame = restartGame;           	// Reloads the page so that you can start a new game from scratch (including entering name)
 
@@ -167,7 +175,7 @@
 
 
 		printTheGrid(gridWithMinesAndOnes); 								// print out the entire grid into the HTML document
-		assignHandlers(gridWithMinesAndOnes);                               // assigne onclick handlers to all table cells
+		assignHandlers(gridWithMinesAndOnes, mineCount);                               // assigne onclick handlers to all table cells
 
 
 
@@ -176,7 +184,8 @@
 
 
         /**
-         * Iterates over a 2D array, finds the M locations and adds number of mines to the adjacent locations; ultimately returning a new object array with the M and ones
+         * Iterates over a 2D array, finds the M locations and adds number of mines to the adjacent locations; ultimately returning a new object array with the M and 
+		 * mine counts
          * @param twoDimGrid - 2D array that will be used to locate the Ms
          * @returns {Array} - array of objects each representing a cell
          */
@@ -219,7 +228,7 @@
 			var gridSize = twoDimGrid.length;
 			//2. add coordinates for all cells around that one object cell
 			for (let i = 0; i < cellObjsArr.length; i++) {				// iterate through all objects within array created above
-				var currentCell = cellObjsArr[i];						// cell we're wearking with in individual loop iterations
+				var currentCell = cellObjsArr[i];						// cell we're working with in individual loop iterations
 
 				// GET THE ROW ABOVE COORDS
 				//  X X X
@@ -372,7 +381,7 @@
 
 
 
-			//3. iterate through individual adjacent cells and increase counter of mines if M found
+			//3. iterate through individual adjacent cells on each cell object and increase counter of mines if M found in any of the surrounding cells
 
 			for (let i = 0; i < cellObjsArr.length; i++) {
 
@@ -474,8 +483,8 @@
          * Prompts user for the grid width and returns the entered value
          * @returns {number}
          */
-		 function promptUserForMineCount(gridSize) {
-			
+		function promptUserForMineCount(gridSize) {
+
 			var mineCount = 0;					// setting mineCount to 0 so that it can be used in the while loop later
 
 			// Prompt user to enter a number for mineCount
@@ -487,8 +496,12 @@
 
 			// several arbitrary checks to ensure user indeed entered width that's greater than 5, is a number and is not null (user did not cancel the prompt)
 			if ((mineCount > 0) && (!isNaN(mineCount)) && (mineCount != null)) {
+				document.getElementById('mine-counter').innerHTML = "You still need to find " + mineCount + " mines";
 				return mineCount;
 			}
+
+
+			
 		}
 
         /**
@@ -540,20 +553,22 @@
 
 
 		/**
-		* Assignes onclick handlers to individual table cells
+		* Assignes onclick and rightclick (contextmenu) handlers to individual table cells
 		*/
-		function assignHandlers(grid) {
+		function assignHandlers(grid, minecount) {
 
-			var tableCells = document.getElementsByTagName("td");								//get all td HTML elements from the document
-			var mineIdsArr = [];																			//declare variable to hold M coordinates
-			var alertIdsArr = [];
+
+
+			var tableCells = document.getElementsByTagName("td"),								//get all td HTML elements from the document
+				mineIdsArr = [],																//declare arr to hold M coordinates
+				alertIdsArr = [],																//declare arr to hold coordinates of cells with vales > 0
+				alreadyClickedCount = 0;														//keep count of how many M cells have been clicked
 
 			for (let i = 0; i < grid.length; i++) {
 				if (grid[i].value === "M") {
 					mineIdsArr.push(grid[i].id);
 				}
 
-				console.log(grid[i]);
 				if (grid[i].value > 0) {
 					alertIdsArr.push(grid[i].id);
 				}
@@ -563,40 +578,49 @@
 
 
 			for (let i = 0; i < tableCells.length; i++) {										// assign onclick handlers to all table cells (using the td element array created earlier)
-				tableCells[i].onclick = function (e) {
+				tableCells[i].onclick = onClickHandler;
+				tableCells[i].oncontextmenu = onRightClickHandler;
+			}
 
-					if (mineIdsArr.indexOf(e.target.id) > -1) {												// if the clicked id has the same id as the mine, show M and the button
-						document.getElementById(e.target.id).className = "mine";				// and change the background color 
-						document.getElementById(e.target.id).innerHTML = "M";
 
-						//TODO: only make visible when the last one is clicked or add regular minesweeper logic
+
+			function onClickHandler(e) {
+				if (mineIdsArr.indexOf(e.target.id) > -1) {												// if the clicked id has the same id as the mine, show M and the button
+					document.getElementById(e.target.id).className = "mine";				// and change the background color 
+					document.getElementById(e.target.id).innerHTML = "M";
+
+					alreadyClickedCount++;													//increase the count of mines that have been found
+					document.getElementById('mine-counter').innerHTML = "You still need to find " + (mineCount - alreadyClickedCount)  + " mines";
+
+					if (alreadyClickedCount == minecount) {									// if all mines have been found, show the restart game button
+					    document.getElementById('mine-counter').innerHTML = "";
 						document.getElementById('myButton').className = "button-visible";
-					} else if (alertIdsArr.indexOf(e.target.id) > -1) {							// if the clicked id has the same id as one of the values in the onesArr, show 1
-						document.getElementById(e.target.id).className = "next-mine";			// and change the background color
-						
-
-						for (let j = 0; j < grid.length; j++) {
-							if (grid[j].id === e.target.id) {
-								document.getElementById(e.target.id).innerHTML = grid[j].value;
-							}
-						}
-
-
-					} else {
-						document.getElementById(e.target.id).className = "clicked";				// in all other cases, change the background color (set to transparent)
 					}
 
+				} else if (alertIdsArr.indexOf(e.target.id) > -1) {							// if the clicked id has the same id as one of the values in the onesArr, show 1
+					document.getElementById(e.target.id).className = "next-mine";			// and change the background color
+
+
+					for (let j = 0; j < grid.length; j++) {
+						if (grid[j].id === e.target.id) {
+							document.getElementById(e.target.id).innerHTML = grid[j].value;
+						}
+					}
+
+
+				} else {
+					document.getElementById(e.target.id).className = "clicked";				// in all other cases, change the background color (set to transparent)
 				}
-
-				tableCells[i].oncontextmenu = function(e) {
-					e.preventDefault();
-					document.getElementById(e.target.id).className = "suspect-mine";
-					document.getElementById(e.target.id).innerHTML = "?";
-				}
-
-
 
 			}
+
+
+			function onRightClickHandler(e) {
+				e.preventDefault();
+				document.getElementById(e.target.id).className = "suspect-mine";
+				document.getElementById(e.target.id).innerHTML = "?";
+			}
+
 		}
 
 
@@ -617,6 +641,7 @@
 
 	<br/>
 	<button type="button" class="button-hidden" id="myButton" onclick="restartGame()">Restart the game!</button>
+
 
 </body>
 
